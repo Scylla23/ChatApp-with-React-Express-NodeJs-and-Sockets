@@ -21,7 +21,7 @@ const registerUser = async (req, res) =>{
         // console.log(email);
         // console.log(password);
         if(user)
-            return res.status(403).json(" Email already registered");
+            return res.status(400).json(" Email already registered");
         
         if(!name || !email || !password)
             return res.status(400).json(" Enter all the information ");
