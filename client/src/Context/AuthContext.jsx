@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { Children, createContext ,useCallback,useEffect,useState } from "react";
-import { baseUrl, postRegister } from "../Utils/services";
+import { baseUrl, postRequest } from "../Utils/services";
 
 
 export const AuthContext = createContext();
@@ -15,10 +15,25 @@ export const AuthContextProvider = ({children}) =>{
         email : "",
         password : "",
     })
-    //console.log(user);
-    useEffect(() => {
-        const user = localStorage.getItem("User")
+    const [loginError,setLoginError] = useState(null);
+    const [isLoginLoading,setisLoginLoading] = useState(false);
+    const[loginInfo,setLoginInfo] = useState({
+        name : "",
+        email : "",
+        password : "",
+    })
+    console.log("User" , user);
+    console.log("LoginInfo" , loginInfo);
+    useEffect(() =>{
+        const user = localStorage.getItem("User");
         setUser(JSON.parse(user))
+    } , [])
+
+    const updateRegisterInfo = useCallback((info) => {
+        setRegisterInfo(info);
+    },[])
+    const updateLoginInfo = useCallback((info) => {
+        setLoginInfo(info);
     },[])
 
     const registeruser = useCallback( async (event) => {
@@ -26,28 +41,57 @@ export const AuthContextProvider = ({children}) =>{
         setisRegisterLoading(true)
         setRegisterError(null)
 
-        const response = postRegister(`${baseUrl}/users/register` , JSON.stringify(registerInfo))
+        const response = await postRequest(`${baseUrl}/users/register` , JSON.stringify(registerInfo))
         setisRegisterLoading(false)
-        
+        console.log(response)
         if(response.error){
             return setRegisterError(response);
         }
-        console.log("Response from api " + JSON.stringify(response))
-        localStorage.setItem("User" ,JSON.stringify(response) )
+        console.log("RegisterInfo  " + registerInfo);
+        localStorage.setItem("User" ,JSON.stringify(registerInfo))
         setUser(response);
         //console.log("User " + JSON.stringify(user));
 
     },[registerInfo])
 
- 
+
+    const loginUser =  useCallback( async (e) => {
+        e.preventDefault();
+        setisLoginLoading(true)
+        setLoginError(null)
+
+        const response = await postRequest(`${baseUrl}/users/login` , JSON.stringify(loginInfo))
+        setisLoginLoading(false)
+
+        if(response.error){
+            return setLoginError(response)
+        }
+        localStorage.setItem("User",JSON.stringify(response))
+        setUser(response)
+        return response
+    },[loginInfo])
+
+
+    //console.log(user);
+    useEffect(() => {
+        const user = localStorage.getItem("User")
+        setUser(JSON.parse(user))
+    },[])
+
+   
+
+    const logoutUser = useCallback(() => {
+        localStorage.removeItem("User");
+        setUser(null);
+    },[])
 
     //console.log(registerInfo);
 
-    const updateRegisterInfo = useCallback((info) => {
-        setRegisterInfo(info);
-    },[])
+    
 
-    return <AuthContext.Provider value={{registerInfo , updateRegisterInfo ,registeruser, registerError ,isRegisterLoading}}>
+    return <AuthContext.Provider value={{user ,registerInfo , updateRegisterInfo ,registeruser, registerError ,isRegisterLoading ,
+     logoutUser , loginError,loginInfo , loginUser , updateLoginInfo , isLoginLoading , 
+     }}>
             {children}
         </AuthContext.Provider>   
 

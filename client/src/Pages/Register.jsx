@@ -5,7 +5,7 @@ import { Alert, Button, Form, Row, Col, Stack } from "react-bootstrap";
 import { AuthContext } from "../Context/AuthContext";
 const register = () => {
   const {
-    user,
+    
     registerInfo,
     updateRegisterInfo,
     registeruser,
