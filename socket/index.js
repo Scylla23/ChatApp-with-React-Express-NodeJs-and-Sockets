@@ -20,7 +20,7 @@ io.on("connection", (socket) => {
 
   //add message
   socket.on("sendMessage" , (message) =>{
-    const user = onlineUser.find(user = user.userId === message.recipientId) 
+    const user = onlineUser.find(user => user.userId === message.recipientId) 
     if(user){
       io.to(user.socketId).emit("getMessage" , message)
     }
