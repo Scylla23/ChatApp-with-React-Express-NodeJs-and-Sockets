@@ -2,7 +2,9 @@
 /* eslint-disable no-unused-vars */
 import { createContext ,useCallback,useEffect,useState } from "react";
 import { getRequest , baseUrl , postRequest } from "../Utils/services";
-import { async } from "react-input-emoji";
+import { InputEmoji } from "react-input-emoji";
+import {io} from "socket.io-client";
+
 
 
 export const ChatContex = createContext();
@@ -17,7 +19,46 @@ export const ChatContexProvider = ({children , user}) => {
     const [isMessagesLoading , setMessagesLoading] = useState(null);
     const [messagesError , setMessagesError] = useState(null);
     const [sendTextMessageError , setSendTextMessageError] = useState(null)
-    const [newMwssage , setNewMessage] = useState(null)
+    const [newMessage , setNewMessage] = useState(null)
+    const [socket , setSocket] = useState(null)
+    const [onlineUsers , setonlineUsers] = useState([])
+
+
+    useEffect(() => {
+        const newSocket = io("http://localhost:3000");
+        setSocket(newSocket)
+
+        return () => {
+            newSocket.disconnect()
+        }
+    },[user]);
+
+    //add online user
+    useEffect(() => {
+        if(socket === null) return
+        socket.emit("addNewUser" , user?.id)
+        socket.on("getOnlineUsers" , (res) => {
+            setonlineUsers(res);
+        });
+
+        return () => {
+            socket.off("getOnlineUsers");
+        };
+    } , [socket])
+
+
+
+    //send message
+    useEffect(() => {
+        if(socket === null) return
+
+        const recipientId = chat?.members.find((id) => id !== user?._id);
+        
+        socket.emit("sendMessage", {...newMessage , recipientId})
+    } , [newMessage])
+
+
+    //receive message
 
     useEffect(() => {
 
@@ -129,7 +170,8 @@ export const ChatContexProvider = ({children , user}) => {
         messages,
         isMessagesLoading,
         messagesError,
-        sendTextMessage
+        sendTextMessage,
+        onlineUsers
 
     }}
      >{children}</ChatContex.Provider>    
