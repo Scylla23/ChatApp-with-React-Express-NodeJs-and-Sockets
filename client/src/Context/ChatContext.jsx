@@ -22,6 +22,8 @@ export const ChatContexProvider = ({children , user}) => {
     const [newMessage , setNewMessage] = useState(null)
     const [socket , setSocket] = useState(null)
     const [onlineUsers , setonlineUsers] = useState([])
+    const [notifications , setNotifications] = useState([])
+    const [allUsers , setAllUsers] = useState([])
 
 
     useEffect(() => {
@@ -58,7 +60,7 @@ export const ChatContexProvider = ({children , user}) => {
     } , [newMessage])
 
 
-    //receive message
+    //receive message and Notification
     useEffect(() => {
         if(socket === null) return
 
@@ -67,10 +69,21 @@ export const ChatContexProvider = ({children , user}) => {
 
             setMessages((prev) => [...prev , res] )
         } )
+        
+        socket.on("getNotification" , (res) =>{
+            const isChatOpen = currentChat?.members.some(id => id === res.senderId)
+
+            if(isChatOpen){
+                setNotifications(prev => [{ ...res , isRead:true ,...prev} ])
+            }else{
+                setNotifications(prev => [res , ...prev])
+            }
+        })
 
         return () => {
             socket.off("getMessage")
-        }
+            socket.off("getNotification")
+        };
     } , [socket , currentChat])
 
 
@@ -98,6 +111,7 @@ export const ChatContexProvider = ({children , user}) => {
 
             })
             setPotentialChats(pchats)
+            setAllUsers(response)
         }
         getUsers();
     } , [userChats])
@@ -186,7 +200,9 @@ export const ChatContexProvider = ({children , user}) => {
         isMessagesLoading,
         messagesError,
         sendTextMessage,
-        onlineUsers
+        onlineUsers,
+        notifications,
+        allUsers,
 
     }}
      >{children}</ChatContex.Provider>    
