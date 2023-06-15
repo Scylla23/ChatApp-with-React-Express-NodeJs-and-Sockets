@@ -2,6 +2,7 @@
 /* eslint-disable no-unused-vars */
 import { createContext ,useCallback,useEffect,useState } from "react";
 import { getRequest , baseUrl , postRequest } from "../Utils/services";
+import { async } from "react-input-emoji";
 
 
 export const ChatContex = createContext();
@@ -11,7 +12,12 @@ export const ChatContexProvider = ({children , user}) => {
     const [isUserChatsLoading , setIsUserChatsLoading] = useState(null);
     const [userChatsError , setUserChatsError] = useState(null);
     const[potentialChats , setPotentialChats] = useState([]);
-
+    const [currentChat , setCurrentChat] = useState(null);
+    const [messages , setMessages] = useState(null);
+    const [isMessagesLoading , setMessagesLoading] = useState(null);
+    const [messagesError , setMessagesError] = useState(null);
+    const [sendTextMessageError , setSendTextMessageError] = useState(null)
+    const [newMwssage , setNewMessage] = useState(null)
 
     useEffect(() => {
 
@@ -60,6 +66,45 @@ export const ChatContexProvider = ({children , user}) => {
     },[user])
 
 
+    useEffect(() => {
+        const getMessages = async () => {
+                setMessagesLoading(true)
+                setMessagesError(null)
+                //console.log(`${baseUrl}/chats/${user?._id}`)
+                const response = await getRequest(`${baseUrl}/messages/${currentChat?._id}`)
+                setMessagesLoading(false)
+                if(response.error){
+                    return setMessagesError(response)
+                }
+                setMessages(response)      
+            
+        }
+        getMessages()
+    },[currentChat])
+
+
+    const sendTextMessage = useCallback(async (textMessage , sender , currentChatId ,setTextMessage) => {
+        if(!textMessage) return console.log(" you must type something.. ")
+
+        const response = await postRequest(`${baseUrl}/messages` , JSON.stringify({
+            chatId : currentChatId,
+            senderId : sender._id ,
+            text: textMessage,
+        }))
+
+        if(response.error)
+            return setSendTextMessageError(response)
+
+        setNewMessage(response)
+        setMessages((prev) => [...prev,response])
+        setTextMessage("")
+    } , [])
+
+
+
+    const updateCurrentChat = useCallback( (chat) => {
+        setCurrentChat(chat)
+    } , [] )
 
     const createChat = useCallback(async(firstId , secondId) => {
         const response = await postRequest(`${baseUrl}/chats` , JSON.stringify({firstId , secondId}));
@@ -79,7 +124,12 @@ export const ChatContexProvider = ({children , user}) => {
         userChatsError,
         //setUserChatsError,
         potentialChats,
-        createChat
+        createChat,
+        updateCurrentChat,
+        messages,
+        isMessagesLoading,
+        messagesError,
+        sendTextMessage
 
     }}
      >{children}</ChatContex.Provider>    

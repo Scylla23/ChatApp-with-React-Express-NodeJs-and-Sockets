@@ -8,6 +8,7 @@ import { Container, Stack } from "react-bootstrap";
 import UserChat from "../Components/Chat/UserChat";
 import PotentialChats from "../Components/Chat/PotentialChats";
 import { AuthContext } from "../Context/AuthContext";
+import ChatBox from "../Components/Chat/ChatBox";
 
 const chat = () => {
     const {user} = useContext(AuthContext)
@@ -18,6 +19,7 @@ const chat = () => {
     setIsUserChatsLoading,
     userChatsError,
     setUserChatsError,
+    updateCurrentChat,
   } = useContext(ChatContex);
 
   //console.log("UserChats", userChats);
@@ -31,13 +33,13 @@ const chat = () => {
             {isUserChatsLoading &&  <p>Loading Chats</p> }
             {userChats?.map((chat,index) =>{
                 return (
-                    <div key={index}>
+                    <div key={index} onClick={() => updateCurrentChat(chat)}>
                         <UserChat chat ={chat} user ={user}/>
                     </div>
                 )
             })}
         </Stack>
-        <p>ChatBox</p>
+        <ChatBox/>
       </Stack>
     )}
   </Container>);
