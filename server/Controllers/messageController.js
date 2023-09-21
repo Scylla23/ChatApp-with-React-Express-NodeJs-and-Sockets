@@ -1,38 +1,39 @@
-const messageModel = require("../Models/messageModel")
-//createMessage
+const Messages = require("../models/messageModel");
 
+module.exports.getMessages = async (req, res, next) => {
+  try {
+    const { from, to } = req.body;
 
-const createMessage = async (req,res) => {
-    const {chatId , senderId, text } = req.body
+    const messages = await Messages.find({
+      users: {
+        $all: [from, to],
+      },
+    }).sort({ updatedAt: 1 });
 
-    const message = new messageModel({
-        chatId , senderId, text
-    })
+    const projectedMessages = messages.map((msg) => {
+      return {
+        fromSelf: msg.sender.toString() === from,
+        message: msg.message.text,
+      };
+    });
+    res.json(projectedMessages);
+  } catch (ex) {
+    next(ex);
+  }
+};
 
-    try{
-        const response = await message.save(message);
-         res.status(200).json(response);
-    }catch(error){
-        console.log(error);
-         res.status(500).json(error)
-    }
-}
+module.exports.addMessage = async (req, res, next) => {
+  try {
+    const { from, to, message } = req.body;
+    const data = await Messages.create({
+      message: { text: message },
+      users: [from, to],
+      sender: from,
+    });
 
-//getMessage
-
-const getMessage = async (req , res) => {
-    const chatId = req.params.chatId
-
-    
-    try{
-        const messages = await messageModel.find({chatId})
-        res.status(200).json(messages);
-    }catch(error){
-        console.log(error);
-         res.status(500).json(error)
-    }
-
-}
-
-
-module.exports = {createMessage , getMessage}
+    if (data) return res.json({ msg: "Message added successfully." });
+    else return res.json({ msg: "Failed to add message to the database" });
+  } catch (ex) {
+    next(ex);
+  }
+};

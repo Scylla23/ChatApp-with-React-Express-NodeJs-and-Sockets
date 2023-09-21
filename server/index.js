@@ -1,37 +1,52 @@
-const express = require("express")
-const cors = require("cors")
-const mongoose = require("mongoose")
-const userRoute = require("./Routes/userRoute")
-const chatRoute = require("./Routes/chatRoute")
-const messageRoute = require("./Routes/messageRoute")
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const authRoutes = require("./routes/auth");
+const messageRoutes = require("./routes/messages");
+const app = express();
+const socket = require("socket.io");
+require("dotenv").config();
 
+app.use(cors());
+app.use(express.json());
 
-require("dotenv").config()
+mongoose
+  .connect(process.env.MONGO_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    dbName: "chatApp"
+  })
+  .then(() => {
+    console.log("DB Connetion Successfull");
+  })
+  .catch((err) => {
+    console.log(err.message);
+  });
 
-const app = express()
+app.use("/api/auth", authRoutes);
+app.use("/api/messages", messageRoutes);
 
-app.use(express.json())
-app.use(cors())
-app.use("/api/users" , userRoute);
-app.use("/api/chats" , chatRoute);
-app.use("/api/messages" , messageRoute);
-
-app.get("/" , (req,res) => {
-    res.send("Welcome to chat API");
+const server = app.listen(process.env.PORT, () =>
+  console.log(`Server started on ${process.env.PORT}`)
+);
+const io = socket(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    credentials: true,
+  },
 });
- 
-const port = process.env.PORT || 5000;
-const uri = process.env.ATLAS_URI || 5000;
 
-app.listen(port , (req , res) => {
-    console.log(`Server running on port: ${port}`)
-})
+global.onlineUsers = new Map();
+io.on("connection", (socket) => {
+  global.chatSocket = socket;
+  socket.on("add-user", (userId) => {
+    onlineUsers.set(userId, socket.id);
+  });
 
-mongoose.connect(uri , {
-    useNewUrlParser : true ,
-    useUnifiedTopology : true,
-}).then(() => {
-    console.log("MongoDB connection established")
-}).catch((error) => {
-    console.log("MongoDB connection failed " + error.message);
-})
+  socket.on("send-msg", (data) => {
+    const sendUserSocket = onlineUsers.get(data.to);
+    if (sendUserSocket) {
+      socket.to(sendUserSocket).emit("msg-recieve", data.msg);
+    }
+  });
+});
